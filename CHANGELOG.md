@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.22.3] - 2026-05-06
+
+### Fixed
+- **Action-item mention restore silently skipped entries with stale `json_id`s even when the entity was findable by name**. The restorer in `full_restore_service.py` already had a fallback path that used `entity_name` or `mention_text` to look the entity up by name, but the lookup never succeeded for `mention_text` because mention text comes through with a leading `@` (e.g. `'@Establish a weekly CIO communication rhythm'`) while `entity_lookup` is keyed on bare names. Result: any mention with both a stale `json_id` and a `None` `entity_name` (the shape produced when the live mention row points at a deleted/replaced entity) was dropped on restore with a `(skipped)` warning. Real-world hit: CIO Onboarding backup, action item "Board" → mention `json_id: 1089` to initiative `Establish a weekly CIO communication rhythm` (which actually lived at `json_id: 1287`). Fix: strip a leading `@` before the name lookup. Future backups exported from a workspace whose mentions resolved via this fallback will write the correct `json_id` (since `full_backup_service.py` serialises the live mention row's `entity_id`, which the heal will have set correctly).
+
+### Tests
+- New regression test `tests/integration/test_restore_mention_fallback.py::TestMentionAtStripFallback::test_stale_json_id_is_healed_via_at_stripped_mention_text` — reproduces the CIO Onboarding incident with a synthetic backup payload (stale `json_id`, `entity_name: None`, `mention_text: '@<real name>'`) and asserts the restore creates the mention pointing at the correct initiative without raising a "not found" warning.
+
 ## [7.22.2] - 2026-05-06
 
 ### Added

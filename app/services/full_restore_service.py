@@ -1487,8 +1487,13 @@ class FullRestoreService:
                         entity_id = json_id_map.get(entity_type, {}).get(source_json_id)
 
                     if entity_id is None:
+                        # Fall back to a name lookup. mention_text comes through
+                        # with a leading '@' (e.g. '@Establish a weekly CIO...'),
+                        # but entity_lookup is keyed on bare names, so strip it.
                         entity_name = mention_data.get("entity_name") or mention_data.get("mention_text")
                         if entity_name:
+                            if entity_name.startswith("@"):
+                                entity_name = entity_name[1:]
                             entity_id = entity_lookup.get(entity_type, {}).get(entity_name)
 
                     if not entity_id:
