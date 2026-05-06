@@ -1,7 +1,7 @@
 # CISK Navigator - Technical Architecture
 
-**Last Updated**: April 6, 2026
-**Version**: 7.15.0
+**Last Updated**: May 6, 2026
+**Version**: 7.22.3
 
 This document provides a comprehensive technical overview of the CISK Navigator application architecture, data models, business logic, and implementation details.
 
@@ -44,6 +44,33 @@ CISK Navigator is a Flask application using PostgreSQL as the production databas
 - **Migration-Friendly**: Flask-Migrate (Alembic) for schema evolution
 - **Well-Tested**: Comprehensive test coverage with pytest
 - **Multi-Tenant**: Complete organization isolation
+
+### v7.22 Recent Changes (May 6, 2026)
+
+1. **Multi value-type KPIs from the UI**. The DB always allowed N `KPIValueTypeConfig` rows per KPI, and the import paths (YAML, JSON full-restore, organization clone, demo data) created them. Only the create/edit forms were locked to one. v7.22.0 unlocked it:
+   - `app/templates/organization_admin/create_kpi.html`: value-type input changed from `<input type="radio">` to `<input type="checkbox">`. The route `organization_admin.create_kpi` was already calling `request.form.getlist("value_type_ids")` and the `KPICreateForm.value_type_ids` field was already a `SelectMultipleField`, so the change was purely the input element. The backend body of the route is unchanged.
+   - `app/forms/kpi_forms.py`: `KPIEditForm` gained `value_type_ids = SelectMultipleField("Value Types", coerce=int)`.
+   - `app/templates/organization_admin/edit_kpi.html`: new "Active Value Types" picker section above the per-config sub-forms. Each VT checkbox carries `data-has-data="1|0"` (true if the existing config has contributions or snapshots). A submit interceptor (`wireVtPickerConfirm`) collects unchecked-with-data VTs, prompts via `window.confirm`, and populates a hidden `confirm_remove_vt_ids` field on confirm.
+   - `app/routes/organization_admin.py edit_kpi`: after `form.validate_on_submit()`, diffs `submitted_vt_ids` against `existing_vt_ids`. To-add VTs get a default `KPIValueTypeConfig(kpi_id=, value_type_id=, calculation_type="manual")`. To-remove VTs whose `cfg.contributions or cfg.snapshots` are non-empty require their id in `confirm_remove_vt_ids` or the route re-renders with an error flash; on confirm, `db.session.delete(cfg)` cascades to contributions / snapshots / cell_comments via `KPIValueTypeConfig`'s relationship `cascade="all, delete-orphan"`. The route refuses to save with zero VTs.
+
+2. **Multi-VT-aware presentations** (v7.22.1). Three downstream views silently picked `kpi.value_type_configs[0]` and hid the rest. All three now iterate every config:
+   - **KPI Dashboard** (`workspace.py kpi_dashboard` + `kpi_dashboard.html`): the inner `for config in kpi.value_type_configs: ... break` was replaced with iteration emitting one entry per config. Each row carries `vt_id`, `value_type_name`, `row_index` (0 for the first row of a KPI). Stats: `stats.total` = `len({k["id"] for k in kpi_list})` (distinct KPIs, matches workspace headline); `stats.tracked_cells = len(kpi_list)` (cells); `on_track / at_risk / off_track / no_data` count cells. Template renders KPI name + Initiative columns only when `k.row_index == 0`; subsequent rows show an indented `bi-arrow-return-right` + faded `k.name` to make the grouping visible.
+   - **Geography map** (`geography.py api_map_kpis` + `map_dashboard/index.html`): each GeoJSON feature now carries `properties.value_types[]` with per-VT `vt_id` / `vt_name` / `vt_kind` / `value` (display string) / `raw_value` / `unit` / `target` / `comments`. Top-level legacy fields (`value`, `raw_value`, `vt_kind`, `unit`, `target`, `comments`) mirror the first cell so the sidebar list and any older popup callers keep working unchanged. The details panel template adds a `detailsMultiVtSection` block with `detailsValueTypes`; the `showDetailsPanel` JS function checks `props.value_types.length > 1` and either renders one card per VT (hiding `detailsLegacyValueSection`) or falls back to the single-cell legacy path.
+   - **Initiative review execution tab** (`organization_admin.py` + `initiative_form.html`): `value_types_data` now includes `vt_id` per entry. The template wraps each value badge in `<a href="{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=vt.vt_id) }}?return_to=...">` so each VT is reachable as its own contribute link. The KPI name link still uses `first_vt_id` for back-compat.
+
+3. **Qualitative pictograms on the KPI Dashboard** (v7.22.0). The dashboard called `format_value` for all kinds, but the filter returns the raw key for non-numeric kinds, so `positive_impact` cells with value 3 displayed as "3" instead of "★★★". The route now branches on `vt.kind` before `format_value`:
+   - `list` → `vt.get_list_option_label(value)` rendered as a coloured pill using `vt.get_list_option_color(value)`
+   - `risk` / `positive_impact` / `negative_impact` / `level` / `sentiment` → fixed 3-step pictogram dictionary: `{1: "!", 2: "!!", 3: "!!!"}`, `{1: "★", 2: "★★", 3: "★★★"}`, etc. Mirrors `workspace/index.html` exactly. The template (`kpi_dashboard.html`) gained a list-pill render branch (`is_list`) and the `value_type_name` span was pulled out of the `{% if k.formatted_value %}` block so multi-VT rows without consensus values still surface their VT name.
+
+4. **Filter preset auto-restore namespacing** (v7.21.11). `_preset_bar.html` keyed `localStorage` only by feature (`preset_config_workspace`), so switching workspaces re-applied the previous workspace's filter (whose ids didn't match B's entities). Every render now sets `window._presetOrgId = '{{ session.organization_id or "0" }}'`, and a new `PresetManager._lsKey(prefix, feature)` helper appends the org id to all six localStorage call sites (register, load, save, remove, reset, DOMContentLoaded restore). Server-side `UserFilterPreset` rows were already org-scoped; only the frontend layer needed namespacing.
+
+5. **Excel export performance** (v7.21.9 / 7.21.10). Two issues:
+   - `render.yaml` started gunicorn without `--timeout`; default 30 s killed workers on big workspace exports (production logs: `responseTimeMS=30954` followed by `SIGKILL`). Bumped to `--timeout 120` to match the `Procfile`.
+   - `ExcelExportService` recomputed `entity.get_rollup_value()` and `cfg.get_consensus_value()` per cell, completely bypassing `RollupCacheEntry`. Standalone HTML export was instant by comparison because it goes through `_build_workspace_data()` which already reads the cache. Excel now pre-loads the cache once per request via `_load_rollup_cache(organization_id)` (returns `{}` when `SystemSetting.is_precompute_rollups_enabled()` is false), and `_write_rollup_row` + a new `_kpi_value(ctx, kpi_id, vt_id, cfg)` helper read from the cache in all four call sites (`_build_overview` RAG distribution, `_tree_kpi`, `_build_kpis_flat`, plus the rollup rows themselves). Live aggregation is the fallback only on cache miss / when pre-compute is off. System-level cache lookups key on `sl.system_id` (not `sl.id`) to match `RollupComputeService`.
+
+6. **Backup restore mention self-heal** (v7.22.3). `FullRestoreService._restore_action_items` had a fallback path that used `entity_name` or `mention_text` to look up an entity by name when the `json_id` didn't match anything in the restored set. The fallback never fired for `mention_text` because mention text is stored with a leading `@` (e.g. `@Establish a weekly CIO communication rhythm`) while `entity_lookup` is keyed on bare names. Real-world hit: CIO Onboarding backup, action item "Board" → mention `json_id: 1089` to an initiative that actually lived at `json_id: 1287`; the mention was silently skipped on every import. Fix: strip a leading `@` before the name lookup. Future backups exported from the restored workspace carry the corrected id automatically because `full_backup_service.py` serialises the live `mention.entity_id` (which the heal will have set correctly).
+
+7. **Test coverage** (v7.22.2). Added `tests/integration/test_multi_vt_kpi.py` (11 tests) and `tests/integration/test_restore_mention_fallback.py` (1 test). Full suite: 357 pass, 3 skipped.
 
 ### v7.19–7.21 Recent Changes (April 28, 2026)
 

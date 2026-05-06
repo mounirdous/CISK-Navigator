@@ -38,6 +38,39 @@ CISK Navigator is a web-based collaborative data collection and aggregation syst
 - **Context-specific KPIs**: KPIs belong to initiative-system pairs, not master systems
 - **Organization isolation**: Each organization has completely separate data
 
+## What's New in v7.22 (May 2026)
+
+### Multi value-type KPIs from the UI
+
+A KPI can now track multiple value types simultaneously (e.g. *Gap Count* + *Risk Level* on the same KPI). The DB and import paths (YAML, JSON full-restore, organization clone, demo data) always supported many value-type configs per KPI; v7.22 unblocks creation and editing from the UI.
+
+- **Create form** (`/org-admin/initiative-system-links/<id>/kpis/create`): the value-type input switched from a single radio to checkboxes. Each checked VT expands its own colour / target / calculation-type sub-form (existing per-VT field naming was already keyed by `vt_id`).
+- **Edit form** (`/org-admin/kpis/<id>/edit`): the form gained an "Active Value Types" picker section. Newly checked VTs get a default `KPIValueTypeConfig` (`calculation_type="manual"`, no target). Removing a VT that has contributions or snapshots requires explicit confirmation via a `confirm_remove_vt_ids` hidden field that the JS submit interceptor populates after a `window.confirm` prompt; the route refuses to save with zero VTs left.
+
+### Multi-VT-aware presentations
+
+Three downstream views previously picked the first config silently and hid the rest:
+
+- **KPI Dashboard** (`/workspace/kpi-dashboard`): one row per (KPI × value-type) cell. KPI name + Initiative columns render only on the first row of each KPI; follow-up rows show an indented arrow + faded name to make the grouping visible. Status tiles (On Track / At Risk / Off Track / No Data) count cells, so a multi-VT KPI can contribute to two buckets at once. Total KPIs still counts distinct KPIs (matches the workspace headline). A "tracked rows (KPI × value type)" subtitle appears when the cell count differs.
+- **Geography map** (`/map/`): each GeoJSON feature carries a `value_types[]` array per VT. The details panel renders one card per VT for multi-VT KPIs (current value, target progress, inline comments), keeping the legacy single-cell layout for single-VT KPIs.
+- **Initiative review execution tab**: each value badge is now a clickable contribute link to its specific (KPI × VT) cell, instead of all VTs sharing one link to the first VT.
+
+### Qualitative pictograms on the KPI Dashboard
+
+The dashboard previously rendered raw 1/2/3 integers for qualitative value-type kinds. The route now picks the right pictogram per `vt.kind` (`risk` → !/!!/!!!, `positive_impact` → ★/★★/★★★, `negative_impact` → ▼/▼▼/▼▼▼, `level` → ●/●●/●●●, `sentiment` → ☹️/😐/😊, `list` → option label as a coloured pill). Mirrors the workspace tree exactly.
+
+### Filter presets scoped per workspace
+
+Browser-side filter preset auto-restore (`PresetManager.register(..., true)`) used to key its `localStorage` by feature name only (`preset_config_workspace`). Switching workspaces re-applied a filter whose ids belonged to the previous workspace, hiding everything. Keys are now scoped by `organization_id` so filters survive a workspace switch independently.
+
+### Backup restore self-heals stale @mentions
+
+When an action-item mention references an entity by an outdated internal id (e.g. the entity was re-created somewhere along the way), `FullRestoreService` now resolves the link by name from `mention_text` (stripping the leading `@`) instead of skipping with a warning. Future backups exported from the restored workspace carry the corrected id automatically.
+
+### Excel export performance
+
+`render.yaml` started gunicorn without `--timeout` (default 30 s), causing worker SIGKILL on big workspace exports. Bumped to 120 s. Independently, `ExcelExportService._write_rollup_row` and the per-cell consensus reads in `_build_overview` / `_tree_kpi` / `_build_kpis_flat` were recomputing aggregations from scratch instead of reading `RollupCacheEntry` (which the live workspace already uses). All four call sites now read the cache and fall back to live aggregation only on miss / when pre-compute is disabled.
+
 ## What's New in v7.19–7.21 (April 2026)
 
 ### Standalone HTML Workspace Snapshot

@@ -1,12 +1,35 @@
-# 🧭 CISK Navigator v7.21.3
+# 🧭 CISK Navigator v7.22.3
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-7.21.3-blue)
+![Version](https://img.shields.io/badge/version-7.22.3-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
-![Tests](https://img.shields.io/badge/tests-330%20passing-success)
+![Tests](https://img.shields.io/badge/tests-357%20passing-success)
+
+## ✨ What's New in v7.22 (May 2026)
+
+### 🎯 **Multi value-type KPIs end-to-end**
+- A KPI can now track **multiple value types** at once (e.g. *Gap Count* + *Risk Level* on the same KPI). The DB and import paths always supported this; v7.22 unblocks it from the UI.
+- **Create form**: the value-type input switched from a radio (one) to checkboxes (many).
+- **Edit form**: new "Active Value Types" picker. Adding a VT creates a default config; removing a VT that already has contributions or snapshots requires explicit confirmation so you can't accidentally lose data.
+- **KPI Dashboard**: emits one row per (KPI × value-type) cell. The KPI name shows once at the top of each group; subsequent VT rows are indented under it. Status counters (On Track / At Risk / Off Track / No Data) count cells, so a multi-VT KPI with two different statuses contributes to two buckets. A "tracked rows (KPI × value type)" subtitle appears when the cell count differs from the KPI count.
+- **Geography map**: the details panel renders one card per VT for multi-VT KPIs, each with its own current value, target progress, and contributor comments.
+- **Initiative review execution tab**: each value badge is now a direct contribute link to its specific (KPI × VT) cell.
+- **11 new integration tests** pin the multi-VT contract end-to-end so future refactors can't silently regress to single-VT assumptions.
+
+### 🖼️ **KPI Dashboard pictograms restored**
+- Qualitative value types (Risk, Maturity, Sentiment, Positive/Negative Impact) now render as ★★★ / !!! / ☹️ etc. on the dashboard, matching what the workspace tree always showed. Previously they showed raw 1/2/3 integers.
+
+### 🛡️ **Filter presets no longer leak across workspaces**
+- Saving a workspace filter in workspace A and switching to B used to silently re-apply A's filter to B (which referenced ids that don't exist in B), hiding everything. Browser-side filter state is now scoped per workspace.
+
+### 🚀 **Excel export performance**
+- Bumped the production server timeout from 30 s to 120 s and rewired the export to read pre-computed rollup values from the cache (the same cache the live workspace uses) instead of recomputing the full aggregation tree per cell. Big workspaces that used to time out now export in seconds.
+
+### 🔧 **Backup restore self-heals stale @mentions**
+- When a backup contains an action-item mention referencing an entity by an outdated internal id (because the entity was re-created somewhere along the way), the restorer now resolves the link by name instead of skipping with a warning. Future exports from the restored workspace carry the corrected id automatically.
 
 ## ✨ What's New in v7.19–7.21 (April 2026)
 

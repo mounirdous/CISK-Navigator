@@ -1325,6 +1325,80 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.22.3",
+            "date": "May 6, 2026",
+            "tags": ["fix"],
+            "changes": [
+                "<strong>Restoring a backup with stale @mentions no longer drops them</strong> &mdash; when you re-import a workspace whose action items mentioned an entity by an outdated internal id (because it was re-created somewhere along the way), the restorer now heals the link by name instead of skipping with a warning. Future backups exported from the restored workspace carry the corrected id automatically.",
+            ],
+        },
+        {
+            "version": "7.22.0 – 7.22.2",
+            "date": "May 6, 2026",
+            "tags": ["feature", "fix"],
+            "changes": [
+                "<strong>Multi value-type KPIs from the UI</strong> &mdash; KPIs can now track multiple value types (e.g. Gap Count + Risk Level on the same KPI) directly from the create and edit forms. The create form switched from a single radio to checkboxes, and the edit form gained an Active Value Types picker with a 'has data' badge. Removing a value type that already has contributions or snapshots requires explicit confirmation so you can't accidentally lose data.",
+                "<strong>KPI Dashboard renders multi-value KPIs correctly</strong> &mdash; one row per (KPI &times; value type). The KPI name shows once at the top of the group with subsequent rows indented under it. The On Track / At Risk / Off Track / No Data tiles now count cells, so a multi-VT KPI with two different statuses contributes to two buckets. A 'tracked rows' subtitle appears when the cell count differs from the KPI count.",
+                "<strong>Qualitative pictograms restored on the dashboard</strong> &mdash; value types like Risk Level, Maturity, Sentiment now render as &#9733;&#9733;&#9733; / !!! / &#9786; etc. instead of raw 1/2/3 integers. Matches what the workspace tree already showed.",
+                "<strong>Geography map shows every value type</strong> &mdash; the map details panel renders one card per value type for multi-VT KPIs, each with its own current value, target progress, and contributor comments.",
+                "<strong>Initiative review per-VT contribute links</strong> &mdash; each value badge on an initiative's execution tab is now a direct contribute link to that specific (KPI &times; value type) cell, so multi-VT KPIs are reachable per VT instead of only the first one.",
+                "<strong>Multi-VT integration test suite</strong> &mdash; 11 new tests pin the multi-VT contract end-to-end so future refactors can't silently regress to single-VT assumptions.",
+            ],
+        },
+        {
+            "version": "7.21.11",
+            "date": "May 6, 2026",
+            "tags": ["fix"],
+            "changes": [
+                "<strong>Filter presets no longer leak across workspaces</strong> &mdash; saving a workspace filter in workspace A and switching to workspace B used to silently re-apply A's filter to B, hiding everything (the saved filter referenced ids that don't exist in B). Browser-side filter state is now scoped per workspace.",
+            ],
+        },
+        {
+            "version": "7.21.9 – 7.21.10",
+            "date": "May 5, 2026",
+            "tags": ["fix"],
+            "changes": [
+                "<strong>Excel export no longer times out on large workspaces</strong> &mdash; previously the production worker was killed after 30 seconds on workspaces with many KPIs and contributions. Two fixes: server timeout bumped to 120 seconds, and the export now reads pre-computed rollup values from the cache (the same cache the live workspace uses) instead of recomputing the full aggregation tree per cell. Big workspaces that used to hang now export in seconds.",
+            ],
+        },
+        {
+            "version": "7.21.0 – 7.21.8",
+            "date": "April 28, 2026",
+            "tags": ["feature", "fix"],
+            "changes": [
+                "<strong>Standalone HTML snapshot export</strong> &mdash; new export button next to the Excel one. Generates a single self-contained .html file (around 1MB per workspace) that looks and behaves exactly like the live workspace tree: same expand/collapse, same colors, same icons, same Porter / Strategy / Lenses / SWOT panels. Embedded data so it works offline; falls back to the live deployment for clicks.",
+                "<strong>Drill-down popup tooltips</strong> &mdash; long entity names in the drill-down panel were being cut off with '&hellip;'. Each row now shows the full name on hover.",
+                "<strong>Snapshot polish</strong> &mdash; Porter, Strategy, Lenses, and SWOT panels in the snapshot now look identical to the live pages (full layouts, gradients, list bullets). Edit and Back-to-Workspace chrome stripped from the embedded panels. SWOT cells populated correctly.",
+            ],
+        },
+        {
+            "version": "7.20.0",
+            "date": "April 28, 2026",
+            "tags": ["feature", "fix"],
+            "changes": [
+                "<strong>Excel export &mdash; full five-sheet rewrite</strong>. The single bare sheet is replaced by a workbook with: <strong>Overview</strong> (workspace identity, structure counts, RAG distribution), <strong>Tree</strong> (hierarchical Space &rarr; Challenge &rarr; Initiative &rarr; System &rarr; KPI with Excel outline expand/collapse, level-tinted backgrounds, autofilter, hyperlinks back to the app), <strong>KPIs</strong> (every KPI/value-type pair as one flat row with current/target/&Delta;%/RAG/last-update), <strong>Action Items</strong> (full register with priority/status colors), and <strong>Settings</strong> (value types, impact levels, pillars, governance bodies, geography). KPI value cells now store numbers (not strings) so Excel sort/filter works, and each cell gets a RAG fill computed from target &times; direction &times; tolerance.",
+                "<strong>Edit Organization icon fix</strong> &mdash; the Name field icon now shows the workspace's logo / branding default instead of always showing the generic building icon.",
+                "<strong>Stale workspace name fix</strong> &mdash; renaming the active workspace immediately updates the navbar instead of waiting for a switch or login.",
+            ],
+        },
+        {
+            "version": "7.19.0",
+            "date": "April 28, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Choose-from-existing logo picker</strong> &mdash; every entity card on the Branding Manager (organization, space, challenge, initiative, system, KPI) has a new button that opens a gallery of every logo already saved across workspaces you have access to. Filter by workspace, source kind, or name; click any thumbnail to copy it into the current slot.",
+                "<strong>Sample import file regenerated</strong> &mdash; the bundled SAMPLE_IMPORT.json was on an old format and silently failed restore. Refreshed to the current backup format with working examples of every section.",
+            ],
+        },
+        {
+            "version": "7.18.0",
+            "date": "April 25, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Mass-edit contributions from the drill-down popup</strong>. Every contributing KPI row now has two action icons: <strong>+ Add new value</strong> opens an inline modal that shows the last contribution (with Copy / Copy-&-Fill buttons for fast context reuse) and lets you save without leaving the page; <strong>Open KPI cell</strong> opens the full KPI contribution detail page with new Prev/Next buttons that walk through the drill-down list, preserving filters.",
+            ],
+        },
+        {
             "version": "7.17",
             "date": "April 9, 2026",
             "tags": ["feature", "fix"],

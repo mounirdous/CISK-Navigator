@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.22.4] - 2026-05-06
+
+### Documentation
+- **Refreshed all user-facing release notes and developer docs through v7.22.3.** The in-app `/workspace/changelog` page (hand-curated entries in `app/routes/workspace.py changelog()`) was stuck at v7.17 from April 9 — added six new grouped entries covering v7.18.0, v7.19.0, v7.20.0, v7.21.0–7.21.8, v7.21.9–7.21.10, v7.21.11, v7.22.0–7.22.2, and v7.22.3. Each entry uses plain-language summaries without internal jargon (no `RollupCacheEntry`, no `json_id_map`).
+- `README.md` version banner bumped from 7.21.3 → 7.22.3, test count from 330 → 357. Added a "What's New in v7.22 (May 2026)" section above the existing v7.19–7.21 block.
+- `app/SPECIFICATIONS.md` gained a new "What's New in v7.22 (May 2026)" section covering multi-VT KPIs (create/edit/dashboard/map/initiative review), qualitative pictograms restoration, filter-preset workspace scoping, mention restore self-heal, and Excel export performance.
+- `app/ARCHITECTURE.md` version banner bumped from 7.15.0 → 7.22.3 (the doc itself was last touched at v7.21.4 to add the v7.19–7.21 section but the header wasn't updated then). Added a v7.22 Recent Changes section with seven detailed technical entries covering implementation details (route changes, template changes, the `_kpi_value` helper, the `_lsKey` namespacing helper, the `@`-strip mention fallback, etc.).
+- Skipped the abandoned duplicates `ARCHITECTURE.md` (root) and `docs/ARCHITECTURE.md` — both are April-11 copies that haven't been touched since and are superseded by `app/ARCHITECTURE.md`.
+
 ## [7.22.3] - 2026-05-06
 
 ### Fixed
