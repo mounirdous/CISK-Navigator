@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.22.1] - 2026-05-06
+
+### Fixed
+- **Multi-VT-aware presentations across dashboard, map, and initiative review** (Phase 2 of multi-VT support). After v7.22.0 unblocked multi-VT KPI editing, three downstream views still silently picked the first VT and hid the rest. All three now iterate every config:
+    - **KPI Dashboard** (`workspace.py kpi_dashboard` + `kpi_dashboard.html`): one row per (KPI × value-type) cell. The KPI name + Initiative columns are filled on the first row of each KPI; subsequent rows show an indented arrow with the KPI name faded to make the grouping visible. The four status tiles (On Track / At Risk / Off Track / No Data) count cells, so a multi-VT KPI can land in two buckets at once. Total KPIs still counts distinct KPIs (matches the workspace headline); a "N tracked rows (KPI × value type)" subtitle is added when the cell count differs from the KPI count.
+    - **Geography map** (`geography.py api_kpi_locations` + `map_dashboard/index.html`): each GeoJSON feature now carries a `value_types[]` array with per-VT `value` / `raw_value` / `vt_kind` / `unit` / `target` / `comments`. Top-level legacy fields mirror the first cell so the sidebar list and any older popup callers keep working unchanged. The details panel hides the single-cell "Current Value" block when the KPI tracks more than one VT and renders one card per VT instead, each with its own value, progress bar, and inline comments.
+    - **Initiative review execution tab** (`organization_admin.py` + `initiative_form.html`): each value badge becomes a contribute link to its own `kpi_cell_detail(kpi_id, vt_id)` page, so multi-VT KPIs are reachable per VT instead of only via the first one. The KPI name link still uses `first_vt_id` for back-compat; can be revisited later.
+
 ## [7.22.0] - 2026-05-06
 
 ### Added

@@ -871,62 +871,97 @@ def kpi_dashboard():
             chain.append(kpi.impact_level)
         true_importance = compute_true_importance(chain, _im, _iw, _icm, _icr) if len(chain) == 5 and all(chain) else None
 
-        # Get primary value (first config with consensus)
-        primary_value = None
-        primary_formatted = None
-        primary_color = None
-        primary_is_list = False
-        primary_list_color = None
-        target_progress = None
-        target_value = None
-        target_direction = None
-        target_date = None
-        consensus_status = None
-        value_type_name = None
+        # GBs (shared across all rows of this KPI)
+        gbs = []
+        for gbl in kpi.governance_body_links:
+            gb = gbl.governance_body
+            gbs.append({"id": gb.id, "name": gb.name, "abbreviation": gb.abbreviation, "color": gb.color})
+            governance_bodies_used.add(gb.id)
 
-        for config in kpi.value_type_configs:
-            consensus = config.get_consensus_value()
-            if consensus and consensus.get("value") is not None:
+        base_row = {
+            "id": kpi.id,
+            "name": kpi.name,
+            "is_archived": kpi.is_archived,
+            "space_name": sp.name if sp else None,
+            "challenge_name": ch.name if ch else None,
+            "initiative_name": ini.name,
+            "system_name": sys.name if sys else None,
+            "impact_level": kpi.impact_level,
+            "true_importance": true_importance,
+            "governance_bodies": gbs,
+        }
+
+        # Multi-VT-aware: emit one row per (kpi × value-type) cell so a KPI
+        # tracking Gap Count + Risk Level shows both. Each row computes its
+        # own value, target progress, and pictogram from its config.
+        # Pictogram mapping mirrors workspace/index.html (1/2/3 scale).
+        _PICTOGRAMS = {
+            "risk":            {1: "!",   2: "!!",  3: "!!!"},
+            "positive_impact": {1: "★",   2: "★★",  3: "★★★"},
+            "negative_impact": {1: "▼",   2: "▼▼",  3: "▼▼▼"},
+            "level":           {1: "●",   2: "●●",  3: "●●●"},
+            "sentiment":       {1: "☹️",  2: "😐",  3: "😊"},
+        }
+        configs = list(kpi.value_type_configs)
+        if not configs:
+            kpi_list.append({**base_row,
+                "vt_id": None, "value_type_name": None,
+                "value": None, "formatted_value": None, "value_color": None,
+                "is_list": False, "list_color": None,
+                "consensus_status": "no_data",
+                "target_value": None, "target_progress": None,
+                "target_direction": None, "target_date": None,
+                "row_index": 0,
+            })
+        else:
+            row_idx = 0
+            for config in configs:
                 vt = config.value_type
-                value_type_name = vt.name if vt else None
-                primary_value = consensus.get("value")
-                consensus_status = consensus.get("status", "no_data")
-                # Qualitative kinds: render the same pictograms / pills the
-                # workspace index uses, instead of the raw 1/2/3 integer key.
-                # — list   → option label + colored pill (label may include emoji)
-                # — risk / positive_impact / negative_impact / level / sentiment
-                #          → fixed 3-step pictogram per workspace/index.html
-                _PICTOGRAMS = {
-                    "risk":            {1: "!",   2: "!!",  3: "!!!"},
-                    "positive_impact": {1: "★",   2: "★★",  3: "★★★"},
-                    "negative_impact": {1: "▼",   2: "▼▼",  3: "▼▼▼"},
-                    "level":           {1: "●",   2: "●●",  3: "●●●"},
-                    "sentiment":       {1: "☹️",  2: "😐",  3: "😊"},
-                }
-                if vt and vt.is_list():
-                    primary_is_list = True
-                    primary_formatted = vt.get_list_option_label(primary_value) or str(primary_value)
-                    primary_list_color = vt.get_list_option_color(primary_value)
-                elif vt and vt.kind in _PICTOGRAMS:
-                    try:
-                        _step = int(round(float(primary_value)))
-                    except (TypeError, ValueError):
-                        _step = None
-                    primary_formatted = _PICTOGRAMS[vt.kind].get(_step, str(primary_value))
-                else:
-                    try:
-                        primary_formatted = current_app.jinja_env.filters["format_value"](primary_value, vt, config)
-                    except Exception:
-                        primary_formatted = str(primary_value)
-                primary_color = config.get_value_color(primary_value) if hasattr(config, 'get_value_color') else None
+                consensus = None
+                try:
+                    consensus = config.get_consensus_value()
+                except Exception:
+                    pass
+                value = (consensus or {}).get("value")
+                consensus_status = (consensus or {}).get("status", "no_data") if consensus else "no_data"
 
-                if config.target_value is not None:
+                formatted = None
+                value_color = None
+                is_list = False
+                list_color = None
+                if value is not None and vt is not None:
+                    if vt.is_list():
+                        is_list = True
+                        formatted = vt.get_list_option_label(value) or str(value)
+                        list_color = vt.get_list_option_color(value)
+                    elif vt.kind in _PICTOGRAMS:
+                        try:
+                            _step = int(round(float(value)))
+                        except (TypeError, ValueError):
+                            _step = None
+                        formatted = _PICTOGRAMS[vt.kind].get(_step, str(value))
+                    else:
+                        try:
+                            formatted = current_app.jinja_env.filters["format_value"](value, vt, config)
+                        except Exception:
+                            formatted = str(value)
+                    if hasattr(config, "get_value_color"):
+                        try:
+                            value_color = config.get_value_color(value)
+                        except Exception:
+                            value_color = None
+
+                target_progress = None
+                target_value = None
+                target_direction = None
+                target_date = None
+                if config.target_value is not None and value is not None:
                     target_value = config.target_value
                     target_direction = config.target_direction or "maximize"
                     target_date = config.target_date
                     try:
                         tv = float(config.target_value)
-                        cv = float(primary_value)
+                        cv = float(value)
                         if target_direction == "minimize":
                             target_progress = int((tv / cv) * 100) if cv != 0 else 100
                         elif target_direction == "exact":
@@ -937,40 +972,30 @@ def kpi_dashboard():
                             target_progress = int((cv / tv) * 100) if tv != 0 else 0
                     except (ValueError, TypeError, ZeroDivisionError):
                         target_progress = None
-                break  # Use first config with data
 
-        # GBs
-        gbs = []
-        for gbl in kpi.governance_body_links:
-            gb = gbl.governance_body
-            gbs.append({"id": gb.id, "name": gb.name, "abbreviation": gb.abbreviation, "color": gb.color})
-            governance_bodies_used.add(gb.id)
+                kpi_list.append({**base_row,
+                    "vt_id": vt.id if vt else None,
+                    "value_type_name": vt.name if vt else None,
+                    "value": value,
+                    "formatted_value": formatted,
+                    "value_color": value_color,
+                    "is_list": is_list,
+                    "list_color": list_color,
+                    "consensus_status": consensus_status,
+                    "target_value": target_value,
+                    "target_progress": target_progress,
+                    "target_direction": target_direction,
+                    "target_date": target_date.strftime("%Y-%m-%d") if target_date else None,
+                    "row_index": row_idx,
+                })
+                row_idx += 1
 
-        kpi_list.append({
-            "id": kpi.id,
-            "name": kpi.name,
-            "is_archived": kpi.is_archived,
-            "space_name": sp.name if sp else None,
-            "challenge_name": ch.name if ch else None,
-            "initiative_name": ini.name,
-            "system_name": sys.name if sys else None,
-            "value_type_name": value_type_name,
-            "value": primary_value,
-            "formatted_value": primary_formatted,
-            "value_color": primary_color,
-            "is_list": primary_is_list,
-            "list_color": primary_list_color,
-            "consensus_status": consensus_status,
-            "target_value": target_value,
-            "target_progress": target_progress,
-            "target_direction": target_direction,
-            "target_date": target_date.strftime("%Y-%m-%d") if target_date else None,
-            "impact_level": kpi.impact_level,
-            "true_importance": true_importance,
-            "governance_bodies": gbs,
-        })
-
-    # Stats
+    # Stats — kpi_list is now one entry per (kpi × value-type) cell, so:
+    #   total / archived → distinct KPIs (matches the workspace headline)
+    #   on_track / at_risk / off_track / no_data → count cells, so a KPI
+    #     tracking 2 VTs can contribute to two different status buckets
+    distinct_kpi_ids = {k["id"] for k in kpi_list}
+    distinct_archived_ids = {k["id"] for k in kpi_list if k["is_archived"]}
     has_target = [k for k in kpi_list if k["target_progress"] is not None]
     on_track = [k for k in has_target if k["target_progress"] >= 80]
     at_risk = [k for k in has_target if 50 <= k["target_progress"] < 80]
@@ -987,8 +1012,9 @@ def kpi_dashboard():
         "workspace/kpi_dashboard.html",
         kpi_list=kpi_list,
         stats={
-            "total": len(kpi_list),
-            "archived": sum(1 for k in kpi_list if k["is_archived"]),
+            "total": len(distinct_kpi_ids),
+            "archived": len(distinct_archived_ids),
+            "tracked_cells": len(kpi_list),
             "with_target": len(has_target),
             "on_track": len(on_track),
             "at_risk": len(at_risk),

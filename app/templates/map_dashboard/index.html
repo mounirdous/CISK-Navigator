@@ -1295,8 +1295,8 @@
         </div>
 
         <div class="details-body">
-            <!-- Value Section -->
-            <div class="detail-section">
+            <!-- Value Section (single-VT — legacy path; hidden when props.value_types is populated) -->
+            <div class="detail-section" id="detailsLegacyValueSection">
                 <div class="detail-section-title">Current Value</div>
                 <div class="value-display">
                     <span class="value-main" id="detailsValue">0</span>
@@ -1313,6 +1313,12 @@
                         <div class="progress-bar-fill" id="detailsProgressFill" style="width: 0%"></div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Multi-VT section — populated when the KPI tracks more than one value type -->
+            <div class="detail-section" id="detailsMultiVtSection" style="display: none;">
+                <div class="detail-section-title">Value Types</div>
+                <div id="detailsValueTypes" style="display: flex; flex-direction: column; gap: 12px;"></div>
             </div>
 
             <!-- Description Section -->
@@ -2125,21 +2131,70 @@ function openDetailsPanel(kpi, kpiId = null) {
     const crumbs = [props.challenge_name, props.initiative_name, props.system_name].filter(Boolean);
     document.getElementById('detailsKpiBreadcrumb').textContent = crumbs.join(' › ');
 
-    // Update value
-    document.getElementById('detailsValue').innerHTML = formatMapValue(props);
-    document.getElementById('detailsUnit').textContent = '';
+    // Multi-VT-aware value rendering. If the KPI tracks more than one value
+    // type (Gap Count + Risk Level, etc.), render one card per VT and hide
+    // the legacy single-cell section. Otherwise keep the legacy path.
+    const vts = Array.isArray(props.value_types) ? props.value_types : [];
+    const isMultiVt = vts.length > 1;
+    document.getElementById('detailsLegacyValueSection').style.display = isMultiVt ? 'none' : '';
+    document.getElementById('detailsMultiVtSection').style.display = isMultiVt ? '' : 'none';
 
-    // Update progress bar (if target exists)
-    if (props.target) {
-        const current = parseFloat(props.value) || 0;
-        const target = parseFloat(props.target) || 1;
-        const percent = Math.min(Math.round((current / target) * 100), 100);
-
-        document.getElementById('detailsProgressContainer').style.display = 'block';
-        document.getElementById('detailsProgressPercent').textContent = percent + '%';
-        document.getElementById('detailsProgressFill').style.width = percent + '%';
+    if (isMultiVt) {
+        document.getElementById('detailsValueTypes').innerHTML = vts.map(function(vt) {
+            const formatted = formatMapValue({
+                raw_value: vt.raw_value, vt_kind: vt.vt_kind, value: vt.value
+            });
+            let progressHtml = '';
+            if (vt.target) {
+                const current = parseFloat(vt.value) || 0;
+                const target = parseFloat(vt.target) || 1;
+                const percent = Math.min(Math.round((current / target) * 100), 100);
+                progressHtml = `
+                    <div style="margin-top:6px;">
+                        <div style="display:flex; justify-content:space-between; font-size:11px; color:#666; margin-bottom:3px;">
+                            <span>Progress to target</span><strong>${percent}%</strong>
+                        </div>
+                        <div style="background:#e5e7eb; height:6px; border-radius:3px; overflow:hidden;">
+                            <div style="background:#667eea; height:100%; width:${percent}%;"></div>
+                        </div>
+                    </div>`;
+            }
+            const commentsHtml = (vt.comments || []).length === 0 ? '' : `
+                <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+                    ${vt.comments.map(c => `
+                        <div style="padding:6px 10px; background:#f8f9fa; border-radius:6px; border-left:3px solid #667eea; font-size:12px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                                <span style="font-weight:700; color:#667eea; font-size:10px; text-transform:uppercase;">${c.contributor}</span>
+                                ${c.updated_at ? `<span style="font-size:10px; color:#aaa;">${c.updated_at}</span>` : ''}
+                            </div>
+                            <div style="color:#444; line-height:1.4;">${c.comment}</div>
+                        </div>`).join('')}
+                </div>`;
+            return `
+                <div style="padding:10px 12px; background:white; border:1px solid #e5e7eb; border-radius:8px;">
+                    <div style="font-size:11px; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px;">
+                        ${vt.vt_name || 'Value Type'}
+                    </div>
+                    <div style="font-size:18px; font-weight:700; color:#1e293b;">${formatted}</div>
+                    ${progressHtml}
+                    ${commentsHtml}
+                </div>`;
+        }).join('');
     } else {
-        document.getElementById('detailsProgressContainer').style.display = 'none';
+        document.getElementById('detailsValue').innerHTML = formatMapValue(props);
+        document.getElementById('detailsUnit').textContent = '';
+
+        if (props.target) {
+            const current = parseFloat(props.value) || 0;
+            const target = parseFloat(props.target) || 1;
+            const percent = Math.min(Math.round((current / target) * 100), 100);
+
+            document.getElementById('detailsProgressContainer').style.display = 'block';
+            document.getElementById('detailsProgressPercent').textContent = percent + '%';
+            document.getElementById('detailsProgressFill').style.width = percent + '%';
+        } else {
+            document.getElementById('detailsProgressContainer').style.display = 'none';
+        }
     }
 
     // Update description (if available)
@@ -2165,8 +2220,9 @@ function openDetailsPanel(kpi, kpiId = null) {
         document.getElementById('detailsPeriodSection').style.display = 'none';
     }
 
-    // Update comments (if available)
-    const comments = props.comments || [];
+    // Update comments (if available). When multi-VT, comments are rendered
+    // inline per VT card above, so hide the legacy aggregated section.
+    const comments = isMultiVt ? [] : (props.comments || []);
     if (comments.length > 0) {
         document.getElementById('detailsCommentsSection').style.display = 'block';
         document.getElementById('detailsComments').innerHTML = comments.map(c => `

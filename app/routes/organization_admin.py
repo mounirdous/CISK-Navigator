@@ -5023,6 +5023,7 @@ def initiative_form(initiative_id):
                     vt = config.value_type
                     value_types_data.append(
                         {
+                            "vt_id": vt.id,
                             "name": vt.name,
                             "value": raw_value,
                             "formatted_value": formatted_value,

@@ -740,20 +740,50 @@ def api_map_kpis():
 
     features = []
     for kpi in kpis:
-        # Get current value from contributions via ConsensusService
-        primary_config = kpi.value_type_configs[0] if kpi.value_type_configs else None
-        if primary_config:
-            consensus = ConsensusService.calculate_consensus(primary_config.contributions)
-            consensus_value = consensus["value"]
-            if consensus_value is not None:
-                formatted = primary_config.format_display_value(consensus_value)
-                unit = primary_config.value_type.unit_label if primary_config.value_type else None
-                suffix = primary_config.get_scale_suffix()
-                display_value = f"{formatted}{suffix}{(' ' + unit) if unit else ''}"
+        # Build a per-(value-type) cell list so the map details panel can show
+        # every VT a multi-VT KPI tracks (Gap Count + Risk Level, etc.). The
+        # top-level legacy fields (value/raw_value/vt_kind/unit/target/comments)
+        # mirror the first cell so the sidebar list and any older popup paths
+        # keep working unchanged.
+        value_type_cells = []
+        for cfg in kpi.value_type_configs:
+            consensus = ConsensusService.calculate_consensus(cfg.contributions)
+            cv = consensus["value"]
+            if cv is not None:
+                formatted = cfg.format_display_value(cv)
+                unit = cfg.value_type.unit_label if cfg.value_type else None
+                suffix = cfg.get_scale_suffix()
+                disp = f"{formatted}{suffix}{(' ' + unit) if unit else ''}"
             else:
-                display_value = "No data"
+                disp = "No data"
+            cell_comments = [
+                {
+                    "contributor": contrib.contributor_name,
+                    "comment": contrib.comment.strip(),
+                    "updated_at": contrib.updated_at.strftime("%Y-%m-%d") if contrib.updated_at else None,
+                }
+                for contrib in cfg.contributions
+                if contrib.comment and contrib.comment.strip()
+            ]
+            value_type_cells.append({
+                "vt_id": cfg.value_type_id,
+                "vt_name": cfg.value_type.name if cfg.value_type else None,
+                "vt_kind": cfg.value_type.kind if cfg.value_type else "numeric",
+                "value": disp,
+                "raw_value": cv,
+                "unit": cfg.value_type.unit_label if cfg.value_type else None,
+                "target": str(cfg.target_value) if cfg.target_value is not None else None,
+                "comments": cell_comments,
+            })
+
+        # Legacy single-cell fallback for back-compat
+        primary_config = kpi.value_type_configs[0] if kpi.value_type_configs else None
+        if value_type_cells:
+            display_value = value_type_cells[0]["value"]
+            consensus_value = value_type_cells[0]["raw_value"]
         else:
             display_value = "No data"
+            consensus_value = None
 
         # Get geographic location for this KPI
         for assignment in kpi.geography_assignments:
@@ -778,16 +808,9 @@ def api_map_kpis():
             if lat and lon:
                 target_value = primary_config.target_value if primary_config else None
 
-                # Collect non-empty contribution comments
-                comments = []
-                if primary_config:
-                    for contrib in primary_config.contributions:
-                        if contrib.comment and contrib.comment.strip():
-                            comments.append({
-                                "contributor": contrib.contributor_name,
-                                "comment": contrib.comment.strip(),
-                                "updated_at": contrib.updated_at.strftime("%Y-%m-%d") if contrib.updated_at else None,
-                            })
+                # Legacy single-cell comments (first VT) — full per-VT comments
+                # ride along in `value_types` below.
+                comments = value_type_cells[0]["comments"] if value_type_cells else []
 
                 # Build parent chain for tree display
                 region_name = None
@@ -822,6 +845,7 @@ def api_map_kpis():
                             "target": str(target_value) if target_value is not None else None,
                             "unit": primary_config.value_type.unit_label if primary_config and primary_config.value_type else None,
                             "comments": comments,
+                            "value_types": value_type_cells,
                         },
                     }
                 )

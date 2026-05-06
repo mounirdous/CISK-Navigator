@@ -93,7 +93,12 @@
                     <span id="kdImpactIcon" style="opacity:0.5;">☆</span>
                 </button>
             </h1>
-            <p>Performance overview — {{ stats.total }} KPIs across the organization</p>
+            <p>
+                Performance overview — {{ stats.total }} KPIs across the organization
+                {% if stats.tracked_cells and stats.tracked_cells != stats.total %}
+                <span style="opacity:0.75;"> · {{ stats.tracked_cells }} tracked rows (KPI × value type)</span>
+                {% endif %}
+            </p>
         </div>
         <div class="d-flex gap-2 flex-wrap align-items-center">
             <button type="button" class="btn btn-outline-light btn-sm" onclick="toggleKdFilters()" title="Filters">
@@ -176,8 +181,11 @@
                 <tr data-gb="{{ k.governance_bodies | map(attribute='id') | join(',') }}"
                     data-target-status="{% if k.target_progress is not none %}{% if k.target_progress >= 80 %}on_track{% elif k.target_progress >= 50 %}at_risk{% else %}off_track{% endif %}{% elif k.consensus_status in (none, 'no_data') %}no_data{% else %}no_target{% endif %}"
                     data-importance="{{ k.true_importance or 0 }}"
+                    data-kpi-id="{{ k.id }}"
                     data-search="{{ k.name | lower }} {{ (k.initiative_name or '') | lower }} {{ (k.system_name or '') | lower }}">
                     <td>
+                        {# Render KPI name + parents only on the first row of each KPI; subsequent VT rows for the same KPI inherit the visual grouping. #}
+                        {% if k.row_index == 0 %}
                         <div class="kd-name">
                             <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=k.id, return_to='kpi_dashboard') }}" style="color:inherit; text-decoration:none;" title="Edit KPI">
                                 {{ k.name }}
@@ -189,9 +197,17 @@
                         <div class="kd-parent">
                             <i class="bi bi-cpu" style="font-size:0.6rem;"></i> {{ k.system_name or '' }}
                         </div>
+                        {% else %}
+                        <div class="kd-parent" style="padding-left:1rem; border-left:2px solid #e2e8f0;">
+                            <i class="bi bi-arrow-return-right" style="font-size:0.65rem; opacity:0.5;"></i>
+                            <span style="opacity:0.6;">{{ k.name }}</span>
+                        </div>
+                        {% endif %}
                     </td>
                     <td class="kd-d1">
+                        {% if k.row_index == 0 %}
                         <span style="font-size:0.8rem; color:#475569;">{{ k.initiative_name or '-' }}</span>
+                        {% endif %}
                     </td>
                     <td>
                         {% if k.formatted_value %}
