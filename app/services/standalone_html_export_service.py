@@ -417,7 +417,238 @@ window.__SNAPSHOT_EXTRAS__ = """ + extras_blob + """;
     return payload + html
 
 
+def _inject_initiative_review_shim(html, *, base_url=None, snapshot_meta=None):
+    """Slimmer shim for the initiative-review snapshot. The page is mostly
+    server-rendered Bootstrap (no Alpine workspace state, no /workspace/data
+    fetch, no SWOT/Porters/Lenses modals to seed), so we only need to:
+
+    - block form submissions (POST is gated by can_edit=False already, but
+      defense-in-depth)
+    - stub /api/ calls so the inline-update endpoints used by the action-
+      register inline editor return 200 {} instead of 404
+    - hide chrome that's not edit-gated by template conditionals
+      (top navbar, comments panel, mentions dropdown, beta banners)
+    - make `Back to Workspace` and entity-edit links non-navigating dead
+      ends in offline mode (the <base href> still resolves them online,
+      but a recipient who opens the file offline gets a clean read-only
+      view rather than broken links).
+    """
+    import json as _json
+
+    meta = _json.dumps(snapshot_meta or {}, default=str, ensure_ascii=False).replace("</", "<\\/")
+
+    base_tag = ""
+    if base_url:
+        base_tag = '<base href="' + base_url.rstrip('/') + '/">\n'
+
+    snapshot_css = """<style data-snapshot-css="1">
+/* Top app navbar — irrelevant in a static snapshot */
+.navbar, nav.navbar, .ga-subnav { display: none !important; }
+body { padding-top: 0 !important; }
+/* Filter / saved-view preset bar */
+.preset-bar, .preset-bar-inner, [class*="preset-bar"] { display: none !important; }
+/* Comments panel and global mentions UI are server-bound */
+.comments-panel, #commentsPanel, [class*="comments-section"] { display: none !important; }
+.mention-dropdown, .global-search-dropdown, .live-search-results { display: none !important; }
+/* Maintenance / feedback banners */
+.maintenance-banner, #maintenanceBanner { display: none !important; }
+/* Bottom-corner snapshot/export floating buttons (we are the snapshot) */
+.snapshot-controls { display: none !important; }
+/* Read-only banner so recipients know what they are looking at */
+#snapshotReadonlyBanner {
+    position: fixed; bottom: 12px; left: 12px; z-index: 99999;
+    background: #0f172a; color: #f1f5f9; font: 12px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 6px 10px; border-radius: 6px; opacity: 0.85;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+</style>
+"""
+
+    shim = """<script data-snapshot-shim="1">
+window.__SNAPSHOT_MODE__ = true;
+window.__SNAPSHOT_META__ = """ + meta + """;
+(function() {
+  // Stub every backend AJAX so inline-update / action-edit XHRs do nothing
+  // instead of 404'ing. The initiative-form template wires inline edit on
+  // the action register; can_edit=False already hides the click handlers,
+  // but we belt-and-brace.
+  var _origFetch = window.fetch;
+  function stubResp(body, status) {
+    return new Response(typeof body === 'string' ? body : JSON.stringify(body || {}),
+      { status: status || 200, headers: { 'Content-Type': 'application/json' } });
+  }
+  window.fetch = function(input, init) {
+    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    try {
+      if (/\\/(api|workspace\\/api|org-admin\\/api|action_items|inline-update|entity-links)\\b/i.test(url)) {
+        return Promise.resolve(stubResp('{}'));
+      }
+    } catch (e) { /* fall through */ }
+    return _origFetch.apply(this, arguments);
+  };
+  // Block any form submission — the export rendered with can_edit=False
+  // already strips the forms, this is defense-in-depth in case any
+  // remained.
+  document.addEventListener('submit', function(e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }, true);
+  // Add the read-only badge once the DOM is ready.
+  document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('snapshotReadonlyBanner')) return;
+    var b = document.createElement('div');
+    b.id = 'snapshotReadonlyBanner';
+    b.textContent = 'Static snapshot · read-only';
+    document.body.appendChild(b);
+  });
+})();
+</script>
+"""
+
+    payload = base_tag + snapshot_css + shim
+    if "<head>" in html:
+        return html.replace("<head>", "<head>\n" + payload, 1)
+    return payload + html
+
+
 class StandaloneHtmlExportService:
+
+    @staticmethod
+    def export_initiative_review(initiative_id, *, nav_ids=None, base_url=None, generated_by=None):
+        """
+        Render the initiative-review form in snapshot mode (can_edit=False),
+        inline its local /static/ assets, install a minimal fetch+submit
+        shim, and return the resulting single HTML file as BytesIO.
+
+        When `nav_ids` is supplied (a list of initiative ids in order), the
+        first initiative becomes the "shell" of the document and every other
+        initiative's <body> content is appended below with a section divider
+        between them, producing a single read-only document covering the
+        whole review sequence. CSS/JS are inlined once at the top; the
+        appended bodies inherit them.
+
+        Must be called from within a Flask request context.
+        """
+        from datetime import datetime
+
+        from flask import g as _flask_g
+
+        from app import __version__ as app_version
+        from app.models import Initiative
+        from app.routes.organization_admin import initiative_form
+
+        initiative = Initiative.query.get(initiative_id)
+        if not initiative:
+            raise ValueError(f"Initiative {initiative_id} not found")
+
+        # Build the ordered list of initiatives to render. Always render the
+        # requested initiative first (it is the "shell" carrying the CSS/JS).
+        # When nav_ids is supplied, we keep its order but ensure the requested
+        # id appears in front.
+        ordered_ids = [initiative_id]
+        if nav_ids:
+            for nid in nav_ids:
+                if nid != initiative_id and nid not in ordered_ids:
+                    ordered_ids.append(nid)
+
+        def _render_one(iid):
+            _flask_g._snapshot_mode = True
+            try:
+                rendered = initiative_form(iid)
+            finally:
+                _flask_g._snapshot_mode = False
+            if hasattr(rendered, "get_data"):
+                return rendered.get_data(as_text=True)
+            return str(rendered)
+
+        # Render the shell. Inline /static/ assets ONCE here so the file is
+        # truly self-contained; subsequent initiative bodies inherit the
+        # already-loaded styles via class names.
+        shell_html = _render_one(ordered_ids[0])
+        shell_html = _inline_local_assets(shell_html)
+
+        # Append the remaining initiatives' <body> content, prefixed with a
+        # section divider that shows position in the sequence.
+        if len(ordered_ids) > 1:
+            extra_sections_html = ""
+            total = len(ordered_ids)
+            for pos, iid in enumerate(ordered_ids[1:], start=2):
+                other_initiative = Initiative.query.get(iid)
+                other_html = _render_one(iid)
+                # Pull just the inner <body> markup — the chrome (navbar,
+                # snapshot CSS) is already in the shell, so we don't want to
+                # duplicate <head>. <script> blocks inside the body would
+                # rebind handlers that are already wired in the shell, so
+                # strip them (keep the inline event handlers / bootstrap
+                # data-* attributes that don't need a fresh script run).
+                body_match = re.search(r"<body[^>]*>(.*)</body>", other_html, re.DOTALL | re.IGNORECASE)
+                if not body_match:
+                    continue
+                section_inner = body_match.group(1)
+                section_inner = re.sub(
+                    r"<script\b[^>]*>.*?</script>",
+                    "",
+                    section_inner,
+                    flags=re.DOTALL | re.IGNORECASE,
+                )
+                extra_sections_html += (
+                    '<div class="snapshot-sequence-divider" '
+                    'style="page-break-before:always; break-before:page; '
+                    'margin:48px 0 0; padding:18px 24px; '
+                    'background:linear-gradient(135deg,#1565c0,#0d47a1); color:white; '
+                    'border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,0.15);">'
+                    f'<div style="font-size:11px; opacity:0.85; letter-spacing:0.05em; text-transform:uppercase;">'
+                    f'Initiative {pos} of {total}</div>'
+                    f'<h2 style="margin:4px 0 0; font-size:20px; font-weight:700;">'
+                    f'{(other_initiative.name if other_initiative else "(deleted)")}</h2>'
+                    '</div>'
+                    f'<div data-snapshot-section="initiative-{iid}">{section_inner}</div>'
+                )
+
+            # If we have extras, also prepend a section header to the FIRST
+            # initiative so the user sees "1 of N" at the top of the doc.
+            if extra_sections_html:
+                first_header = (
+                    '<div class="snapshot-sequence-divider" '
+                    'style="margin:0 0 24px; padding:18px 24px; '
+                    'background:linear-gradient(135deg,#1565c0,#0d47a1); color:white; '
+                    'border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,0.15);">'
+                    f'<div style="font-size:11px; opacity:0.85; letter-spacing:0.05em; text-transform:uppercase;">'
+                    f'Initiative 1 of {total}</div>'
+                    f'<h2 style="margin:4px 0 0; font-size:20px; font-weight:700;">'
+                    f'{initiative.name}</h2>'
+                    '</div>'
+                )
+                # Insert the first-initiative header as the first child of <body>.
+                shell_html = re.sub(
+                    r"(<body[^>]*>)",
+                    r"\1\n" + first_header,
+                    shell_html,
+                    count=1,
+                    flags=re.IGNORECASE,
+                )
+                # Insert the extras right before </body>.
+                shell_html = re.sub(
+                    r"</body>",
+                    extra_sections_html + "</body>",
+                    shell_html,
+                    count=1,
+                    flags=re.IGNORECASE,
+                )
+
+        meta = {
+            "kind": "initiative_review",
+            "initiative_id": initiative.id,
+            "initiative_name": initiative.name,
+            "sequence_ids": ordered_ids,
+            "sequence_count": len(ordered_ids),
+            "org_name": initiative.organization.name if initiative.organization else None,
+            "generated_at": datetime.utcnow().isoformat() + "Z",
+            "generated_by": generated_by,
+            "app_version": app_version,
+        }
+        shell_html = _inject_initiative_review_shim(shell_html, base_url=base_url, snapshot_meta=meta)
+        return BytesIO(shell_html.encode("utf-8"))
 
     @staticmethod
     def export_workspace(organization_id, *, base_url=None, generated_by=None):

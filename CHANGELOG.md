@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.23.0] - 2026-05-07
+
+### Added
+- **Standalone HTML export of the initiative review** (`/org-admin/initiatives/<id>/export-html`). New icon-only button in the initiative-form header (file-richtext icon, no text label) downloads a single self-contained `.html` file that is the live initiative-review page rendered in read-only mode. Implementation:
+    - The `initiative_form` route checks `g._snapshot_mode` (set by the export route) or `request.args.get("snapshot") == "1"` and forces `can_edit = False` and `edit_mode = False` before rendering. Since the template already gates every Edit / Save / Delete / + New / inline-edit / link-delete affordance behind `{% if can_edit %}` blocks, no template change was needed to strip chrome — the gates close themselves.
+    - New `StandaloneHtmlExportService.export_initiative_review(initiative_id, *, nav_ids=None, base_url, generated_by)`. Renders `initiative_form()` as a function call inside the request context, inlines `/static/` CSS+JS via the existing `_inline_local_assets`, and injects a slimmer shim (`_inject_initiative_review_shim`) that stubs `/api/`, `/inline-update`, `/entity-links` XHRs with `200 {}`, blocks form submits, hides chrome that survives `can_edit=False` (top navbar, preset bar, comments panel, mentions dropdown), and adds a small "Static snapshot · read-only" badge bottom-left.
+- **Whole-review-sequence export.** When the form was opened from a review timeline / Gantt with `?nav=<comma-ids>`, the export icon forwards that nav list and the service stitches every initiative in the sequence into one document. Implementation: render the requested initiative as the shell (CSS/JS inline once), then for each subsequent id render again, extract just the inner `<body>` markup, strip duplicate `<script>` tags, and append under a blue-gradient section divider that shows position ("Initiative 3 of 4 — <name>") with `page-break-before:always` so it prints/PDFs cleanly. Filename auto-switches: single initiative → `Initiative_<name>.html`; sequence → `Review_Sequence_<N>_initiatives.html`. Nav ids are validated against `Initiative.organization_id == org_id`; cross-org and unknown ids are dropped silently to preserve order.
+
 ## [7.22.4] - 2026-05-06
 
 ### Documentation

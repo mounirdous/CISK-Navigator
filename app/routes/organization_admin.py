@@ -4946,6 +4946,17 @@ def initiative_form(initiative_id):
     # Check if user requested edit mode
     edit_mode = request.args.get("edit", "0") == "1" and can_edit
 
+    # Snapshot mode — used by the standalone HTML export. Forces every
+    # edit-gated chrome (Edit / Save / Delete / + New / contribute links,
+    # link-delete forms, inline editors) to render as read-only via the
+    # existing {% if can_edit %} blocks in the template. Triggered either by
+    # an explicit `?snapshot=1` query arg or by the export route setting
+    # `g._snapshot_mode = True` before calling this function.
+    from flask import g as _flask_g
+    if request.args.get("snapshot") == "1" or getattr(_flask_g, "_snapshot_mode", False):
+        can_edit = False
+        edit_mode = False
+
     if request.method == "POST":
         if not can_edit:
             flash("You do not have permission to edit initiative forms", "error")
@@ -5293,6 +5304,61 @@ def initiative_form(initiative_id):
         parent_context=parent_context,
         initiative_decisions=[d for d in Decision.query.filter_by(organization_id=org_id).order_by(Decision.created_at.desc()).all()
                               if d.mentions_entity("initiative", initiative.id)],
+    )
+
+
+@bp.route("/initiatives/<int:initiative_id>/export-html")
+@login_required
+@organization_required
+def export_initiative_html(initiative_id):
+    """Export the initiative review as a single self-contained .html snapshot
+    (read-only — every edit/delete/submit affordance is gated by the existing
+    can_edit conditional in the template, which we force to False).
+
+    When `?nav=<comma-ids>` is supplied, the export covers every initiative in
+    that review sequence in order — useful for sharing a full review set as
+    one document. Without `nav`, only the requested initiative is exported.
+    """
+    from flask import send_file
+
+    from app.services.standalone_html_export_service import StandaloneHtmlExportService
+
+    org_id = session.get("organization_id")
+    initiative = Initiative.query.filter_by(id=initiative_id, organization_id=org_id).first_or_404()
+
+    # Parse ?nav=12,5,18,42 — only keep ids the user has access to in this org.
+    nav_ids = []
+    raw_nav = request.args.get("nav") or ""
+    if raw_nav:
+        candidate_ids = [int(x) for x in raw_nav.split(",") if x.strip().isdigit()]
+        if candidate_ids:
+            allowed = {
+                i.id for i in Initiative.query.filter(
+                    Initiative.id.in_(candidate_ids),
+                    Initiative.organization_id == org_id,
+                ).all()
+            }
+            # Preserve the user-supplied order; drop ids not in this org.
+            nav_ids = [i for i in candidate_ids if i in allowed]
+
+    html_file = StandaloneHtmlExportService.export_initiative_review(
+        initiative_id,
+        nav_ids=nav_ids or None,
+        base_url=request.url_root.rstrip("/"),
+        generated_by=current_user.login if current_user.is_authenticated else None,
+    )
+
+    if nav_ids and len(nav_ids) > 1:
+        filename = f"Review_Sequence_{len(nav_ids)}_initiatives.html"
+    else:
+        safe_name = "".join(c for c in initiative.name if c.isalnum() or c in (" ", "-", "_")).strip()
+        filename = f"Initiative_{safe_name or initiative.id}.html"
+
+    return send_file(
+        html_file,
+        mimetype="text/html",
+        as_attachment=True,
+        download_name=filename,
     )
 
 
