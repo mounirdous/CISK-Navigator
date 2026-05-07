@@ -921,10 +921,9 @@
                 {% if not edit_mode %}
                 {# Forward the review sequence (?nav=...) when present so the export covers every initiative in the user's review set, in order. #}
                 <a href="{{ url_for('organization_admin.export_initiative_html', initiative_id=initiative.id, nav=request.args.get('nav') or None) }}"
-                   class="btn btn-sm btn-outline-light"
-                   style="padding:0.2rem 0.45rem; line-height:1;"
+                   class="btn btn-outline-light"
                    title="{% if request.args.get('nav') %}Download read-only HTML snapshot of the whole review sequence{% else %}Download read-only HTML snapshot of this initiative review{% endif %}">
-                    <i class="bi bi-file-earmark-richtext"></i>
+                    <i class="bi bi-file-earmark-richtext"></i> Export
                 </a>
                 {% endif %}
                 {% if can_edit and not edit_mode %}
