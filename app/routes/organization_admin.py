@@ -5349,7 +5349,11 @@ def export_initiative_html(initiative_id):
     )
 
     if nav_ids and len(nav_ids) > 1:
-        filename = f"Review_Sequence_{len(nav_ids)}_initiatives.html"
+        # Match the workspace tree export's filename shape (Workspace_<orgname>.html)
+        # so the two snapshots feel like a pair when downloaded together.
+        org_name = session.get("organization_name") or (initiative.organization.name if initiative.organization else "Workspace")
+        safe_org_name = "".join(c for c in org_name if c.isalnum() or c in (" ", "-", "_")).strip()
+        filename = f"InitiativeReview_{safe_org_name}.html"
     else:
         safe_name = "".join(c for c in initiative.name if c.isalnum() or c in (" ", "-", "_")).strip()
         filename = f"Initiative_{safe_name or initiative.id}.html"

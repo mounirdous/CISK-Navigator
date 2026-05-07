@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.23.1] - 2026-05-07
+
+### Changed
+- **Initiative review sequence export filename** now mirrors the workspace tree export's shape (`Workspace_<orgname>.html`). Sequence export → `InitiativeReview_<orgname>.html` (was `Review_Sequence_<N>_initiatives.html`); the count number is dropped so the two snapshot files feel like a pair when downloaded together. Single-initiative export filename unchanged (`Initiative_<initiative-name>.html`). Org name is read from `session["organization_name"]` (which the workspace export also uses) with a fallback to `initiative.organization.name`.
+
 ## [7.23.0] - 2026-05-07
 
 ### Added
